@@ -4,7 +4,7 @@ Instructions for Claude Code (and any other AI agent or human contributor) worki
 
 ## Repository Purpose
 
-This repo packages the Harness MCP v2 server + 27 Harness skills + governance hooks as a **single-plugin** Cursor plugin. The reference architecture is [makenotion/cursor-notion-plugin](https://github.com/makenotion/cursor-notion-plugin) — flat layout at the repo root, no marketplace manifest.
+This repo packages the Harness MCP v2 server + 29 Harness skills + governance hooks as a **single-plugin** Cursor plugin. The reference architecture is [makenotion/cursor-notion-plugin](https://github.com/makenotion/cursor-notion-plugin) — flat layout at the repo root, no marketplace manifest.
 
 ## Repository Layout
 
@@ -46,7 +46,8 @@ YAML frontmatter must open with `---\n` and close with `\n---\n`. Missing the `n
 ## Skill Authoring Standards
 
 - **Directory**: `skills/<kebab-case-name>/SKILL.md`. The skill's `name` frontmatter value must match the directory.
-- **MCP tools**: use the Harness MCP v2 consolidated surface only — `harness_list`, `harness_get`, `harness_create`, `harness_update`, `harness_delete`, `harness_execute`, `harness_search`, `harness_describe`, `harness_diagnose`, `harness_status`. Do not reference legacy per-resource tool names.
+- **MCP tools**: use the Harness MCP v2 consolidated surface only — `harness_list`, `harness_get`, `harness_create`, `harness_update`, `harness_delete`, `harness_execute`, `harness_search`, `harness_describe`, `harness_schema`, `harness_diagnose`, `harness_status`. Do not reference legacy per-resource tool names.
+- **Describe vs schema**: use `harness_describe(resource_type=…)` for metadata and operations; use `harness_schema(resource_type=…)` to get the exact JSON Schema for create/update bodies.
 - **Required sections** (match existing skills):
   - `## Instructions` — numbered steps the agent follows
   - `## Examples` — concrete invocation examples
@@ -102,13 +103,11 @@ When you change one of these, update all of the others:
      | env -u HARNESS_API_KEY -u HARNESS_ACCOUNT_ID ./scripts/your-hook.mjs
    ```
    Confirm fail-open behavior without credentials.
-3. **Structural validation** (same rules as the upstream template validator):
-   - `.cursor-plugin/plugin.json` is valid JSON and `name` is kebab-case.
-   - `logo` path in `plugin.json` resolves.
-   - `mcp.json` is valid JSON.
-   - Every file in `rules/` has `description` frontmatter.
-   - Every `skills/<name>/SKILL.md` has `name` + `description`.
-   - Every hook `command` path exists and is executable.
+3. **Run the bundled validator** (mirrors the upstream template validator):
+   ```bash
+   node scripts/validate-plugin.mjs
+   ```
+   Exits non-zero on any error. CI runs this automatically (`.github/workflows/validate.yml`).
 4. **README** is up to date with any new skills, hooks, or env vars.
 
 ## What NOT to Do

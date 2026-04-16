@@ -27,7 +27,7 @@ This repo is a **single-plugin** Cursor plugin at the repo root. See `CLAUDE.md`
 ## Skills
 
 - Path: `skills/<kebab-case>/SKILL.md`.
-- Use only the Harness MCP v2 consolidated tools: `harness_list`, `harness_get`, `harness_create`, `harness_update`, `harness_delete`, `harness_execute`, `harness_search`, `harness_describe`, `harness_diagnose`, `harness_status`.
+- Use only the Harness MCP v2 consolidated tools: `harness_list`, `harness_get`, `harness_create`, `harness_update`, `harness_delete`, `harness_execute`, `harness_search`, `harness_describe`, `harness_schema`, `harness_diagnose`, `harness_status`.
 - Required sections: `## Instructions`, `## Examples`, `## Performance Notes`, `## Troubleshooting`.
 - Every new skill gets a row in the README skill table.
 
@@ -55,10 +55,9 @@ This repo is a **single-plugin** Cursor plugin at the repo root. See `CLAUDE.md`
 
 ## Before you commit
 
-1. `node --check scripts/<file>.mjs` for every modified `.mjs`.
-2. Smoke-test hooks with synthetic stdin and unset credentials — confirm fail-open.
-3. Verify `plugin.json` parses, logo resolves, all rule/skill frontmatter is present, hook scripts exist and are executable.
-4. Update README if the user-facing surface changed.
+1. `node scripts/validate-plugin.mjs` — runs syntax, frontmatter, manifest, hook-executable, mcp.json shape checks. CI (`.github/workflows/validate.yml`) runs the same on every PR.
+2. Smoke-test hooks with synthetic stdin and unset credentials — confirm fail-open (CI does this too).
+3. Update README if the user-facing surface changed.
 
 ## Never
 

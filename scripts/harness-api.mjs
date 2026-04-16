@@ -47,3 +47,33 @@ export function buildScopeQuery({ org_id, project_id } = {}) {
 export function accountId() {
   return ACCOUNT_ID;
 }
+
+/**
+ * Resource types that carry pipeline YAML. The server registers both the legacy
+ * v0 type and the v1 type; hooks must match both.
+ * See /Users/rohangupta/code/mcp-server/src/registry/toolsets/pipelines.ts.
+ */
+export const PIPELINE_RESOURCE_TYPES = new Set(["pipeline", "pipeline_v1"]);
+
+/**
+ * Normalize a harness_create / harness_update `body` input into a YAML string
+ * suitable for policy eval and text scanning. The harness_create tool accepts
+ * three shapes (see mcp-server/src/tools/harness-create.ts):
+ *   1. body: "<yaml string>"                   — pass through
+ *   2. body: { yamlPipeline: "<yaml string>" } — return yamlPipeline
+ *   3. body: { pipeline: { ... } }             — JSON.stringify (not valid YAML
+ *                                                 but good enough for policy
+ *                                                 eval which accepts JSON too
+ *                                                 and for regex scanning of
+ *                                                 template references)
+ * Returns "" if none of the above match.
+ */
+export function extractPipelineYaml(body) {
+  if (typeof body === "string") return body;
+  if (!body || typeof body !== "object") return "";
+  if (typeof body.yamlPipeline === "string") return body.yamlPipeline;
+  if (body.pipeline && typeof body.pipeline === "object") {
+    try { return JSON.stringify(body.pipeline); } catch { return ""; }
+  }
+  return "";
+}
