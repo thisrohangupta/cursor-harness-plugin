@@ -3,7 +3,7 @@
 This repository provides an official Cursor plugin that bundles:
 
 - **Harness Skills** that teach Cursor how to plan, build, deploy, and debug on the Harness.io platform
-- The **[Harness MCP v2 Server](https://github.com/harness/mcp-server)**, which gives the agent 10 consolidated tools across 125+ Harness resource types
+- The **[Harness MCP v2 Server](https://github.com/harness/mcp-server)**, which gives the agent 11 consolidated tools across 160+ Harness resource types
 - **Workspace rules** so the agent follows Harness scope, validation, and confirmation conventions out of the box
 
 Install the plugin and every Harness capability — CI/CD, GitOps, secrets, connectors, feature flags, chaos, cloud cost, security, DORA metrics — becomes available inside Cursor.
@@ -14,22 +14,23 @@ Install the plugin and every Harness capability — CI/CD, GitOps, secrets, conn
 
 ### Harness MCP v2 Server
 
-Cursor connects to the Harness MCP server over stdio. Ten generic tools cover the entire platform:
+Cursor connects to the Harness MCP server over stdio. Eleven generic tools cover the entire platform:
 
 | Tool | Purpose |
 |------|---------|
 | `harness_list` | List resources with filters and pagination |
 | `harness_get` | Get a single resource by ID |
-| `harness_create` | Create a resource (requires confirmation) |
-| `harness_update` | Update a resource (requires confirmation) |
-| `harness_delete` | Delete a resource (requires confirmation) |
+| `harness_create` | Create a resource (server elicits confirmation) |
+| `harness_update` | Update a resource (server elicits confirmation) |
+| `harness_delete` | Delete a resource (server elicits confirmation) |
 | `harness_execute` | Run, retry, interrupt, sync, toggle, approve, reject, test_connection |
 | `harness_search` | Cross-resource keyword search |
-| `harness_describe` | Local metadata/schema lookup (no API call) |
+| `harness_describe` | Local metadata lookup — resource types, operations, fields (no API call) |
+| `harness_schema` | Exact JSON Schema for `create`/`update` body payloads |
 | `harness_diagnose` | Pipeline failure analysis |
 | `harness_status` | Project health overview |
 
-Tools accept `resource_type` (e.g. `pipeline`, `secret`, `template`) and support passing a Harness UI URL directly — `org_id`, `project_id`, `resource_type`, and `resource_id` are auto-extracted.
+Tools accept `resource_type` (e.g. `pipeline`, `pipeline_v1`, `secret`, `template`) and support passing a Harness UI URL directly via the `url` parameter — `org_id`, `project_id`, `resource_type`, and `resource_id` are auto-extracted. Nested URLs (e.g. a PR link) also auto-extract `repo_id` and `pr_number`.
 
 ### Available Skills
 
@@ -62,6 +63,8 @@ Tools accept `resource_type` (e.g. `pipeline`, `secret`, `template`) and support
 | `/audit-report` | Audit trails and compliance evidence (SOC2, GDPR, HIPAA) |
 | `/template-usage` | Template dependency tracking, impact analysis, and adoption |
 | `/create-policy` | Create OPA governance policies for supply chain security |
+| `/manage-pull-requests` | Harness Code PRs — create/merge, reviewers, comments, checks, activity |
+| `/manage-freeze-windows` | Deployment freeze windows and project global freeze — create, toggle, delete |
 
 ### Workspace Rule
 
@@ -79,12 +82,14 @@ Two MCP hooks enforce Harness governance automatically — no extra setup requir
 
 | Event | Matcher | Script | Behavior |
 |-------|---------|--------|----------|
-| `beforeMCPExecution` | `MCP:harness_create` | `scripts/check-templates.mjs` | Before creating a **pipeline**, lists Pipeline/Stage/StepGroup/Step templates at account/org/project scope. If templates exist and the YAML lacks a `templateRef`, prompts the user (`permission: "ask"`) with the catalog so they can reuse an approved template instead of a raw pipeline. |
-| `afterMCPExecution` | `MCP:harness_create`, `MCP:harness_update` | `scripts/validate-policies.mjs` | After a pipeline write, evaluates the YAML against OPA policies and policy sets bound to the `pipeline` entity at all three scopes via the Harness Policy Engine (`/pm/api/v1/policy/evaluations/evaluate-by-type`). Attaches pass/fail details as agent context. |
+| `beforeMCPExecution` | `MCP:harness_create` | `scripts/check-templates.mjs` | Before creating a **pipeline** (`pipeline` or `pipeline_v1`), lists Pipeline/Stage/StepGroup/Step templates at account/org/project scope. If templates exist and the payload lacks a `templateRef`, prompts the user (`permission: "ask"`) with the catalog so they can reuse an approved template instead of a raw pipeline. |
+| `afterMCPExecution` | `MCP:harness_create`, `MCP:harness_update` | `scripts/validate-policies.mjs` | After a pipeline write, evaluates the YAML/JSON against OPA policies and policy sets bound to the `pipeline` entity at all three scopes via the Harness Policy Engine (`/pm/api/v1/policy/evaluations/evaluate-by-type`). Attaches pass/fail details as agent context. |
+
+Both hooks accept all three body shapes `harness_create` supports — raw YAML string, `{yamlPipeline: "..."}`, and `{pipeline: {...}}` JSON — via `extractPipelineYaml()` in `scripts/harness-api.mjs`.
 
 **Fail-open by design.** If `HARNESS_API_KEY` or `HARNESS_ACCOUNT_ID` aren't set, or if the Harness API returns an error, the hooks emit `permission: "allow"` / empty context so the agent is never blocked on infra issues. All API calls are made with the same credentials you set for the MCP server — no extra config.
 
-**Scope.** Hooks fire only for `resource_type: "pipeline"`. Extend `check-templates.mjs` and `validate-policies.mjs` (or add new matchers in `hooks/hooks.json`) to cover services, connectors, environments, or any other entity with policy coverage in your account.
+**Scope.** Hooks fire only for pipeline resource types (`pipeline`, `pipeline_v1`). Extend `check-templates.mjs` and `validate-policies.mjs` (or add new matchers in `hooks/hooks.json`) to cover services, connectors, environments, or any other entity with policy coverage in your account.
 
 ---
 
@@ -103,15 +108,24 @@ harness/cursor-harness-plugin
 The Harness MCP server requires an API key and account ID. Set these as environment variables before starting Cursor:
 
 ```bash
+# Required
 export HARNESS_API_KEY="pat.xxxxx.xxxxx.xxxxx"
-export HARNESS_ACCOUNT_ID="your-account-id"
+export HARNESS_ACCOUNT_ID="your-account-id"   # auto-extracted from PAT if omitted
 
 # Optional — defaults shown
 export HARNESS_BASE_URL="https://app.harness.io"
 export HARNESS_ORG="default"
 export HARNESS_PROJECT=""
-export HARNESS_TOOLSETS=""   # comma-separated, empty = all enabled
+export HARNESS_TOOLSETS=""                    # comma-separated; empty = all enabled
+export HARNESS_PIPELINE_VERSION="0"           # "0" (default) or "1" — prefer pipeline_v1 when "1"
+export HARNESS_SKIP_ELICITATION="false"       # "true" = skip server-side confirmation prompts
+export HARNESS_READ_ONLY="false"              # "true" = reject all write tools
+export HARNESS_API_TIMEOUT_MS="30000"
+export HARNESS_MAX_RETRIES="3"
+export LOG_LEVEL="info"                       # debug | info | warn | error
 ```
+
+All of these are forwarded to the MCP server via `mcp.json`. Only `HARNESS_API_KEY` is strictly required — account ID is extracted from the token if it's a PAT.
 
 Get your API key at **Harness UI → Account Settings → Access Control → Service Accounts** (or a personal access token).
 
@@ -182,7 +196,7 @@ cursor-harness-plugin/
 │   └── validate-policies.mjs # afterMCPExecution — policy evaluation
 ├── rules/
 │   └── harness.mdc          # Workspace rule — MCP conventions
-├── skills/                  # 27 Harness skills
+├── skills/                  # 29 Harness skills
 │   ├── analyze-costs/
 │   ├── audit-report/
 │   ├── chaos-experiment/
@@ -203,6 +217,8 @@ cursor-harness-plugin/
 │   ├── gitops-status/
 │   ├── manage-delegates/
 │   ├── manage-feature-flags/
+│   ├── manage-freeze-windows/
+│   ├── manage-pull-requests/
 │   ├── manage-roles/
 │   ├── manage-users/
 │   ├── migrate-pipeline/

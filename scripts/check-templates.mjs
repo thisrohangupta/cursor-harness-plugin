@@ -4,7 +4,13 @@
 // and asks the user to confirm before creating a pipeline that bypasses them.
 // Emits permission: "ask" with a summary so the agent surfaces the options to the user.
 
-import { credentialsReady, harnessFetch, buildScopeQuery } from "./harness-api.mjs";
+import {
+  credentialsReady,
+  harnessFetch,
+  buildScopeQuery,
+  extractPipelineYaml,
+  PIPELINE_RESOURCE_TYPES,
+} from "./harness-api.mjs";
 
 const ALLOW = { permission: "allow" };
 
@@ -13,16 +19,18 @@ async function main() {
   if (!input) { console.log(JSON.stringify(ALLOW)); return; }
 
   const toolInput = input.tool_input || {};
-  if (toolInput.resource_type !== "pipeline") {
+  if (!PIPELINE_RESOURCE_TYPES.has(toolInput.resource_type)) {
     console.log(JSON.stringify(ALLOW));
     return;
   }
 
-  const body = toolInput.body || {};
-  const yaml = typeof body.yamlPipeline === "string" ? body.yamlPipeline : "";
+  // body can be a YAML string, { yamlPipeline }, or { pipeline: {...} } — see
+  // mcp-server/src/tools/harness-create.ts input schema.
+  const yaml = extractPipelineYaml(toolInput.body);
 
-  // If the pipeline already uses a template, don't nag.
-  if (/\btemplateRef\s*:/.test(yaml) || /\buseFromStage\s*:/.test(yaml)) {
+  // If the pipeline already uses a template (YAML text match) or a templateRef
+  // appears anywhere in the stringified JSON body, don't nag.
+  if (/["']?templateRef["']?\s*:/.test(yaml) || /["']?useFromStage["']?\s*:/.test(yaml)) {
     console.log(JSON.stringify(ALLOW));
     return;
   }
