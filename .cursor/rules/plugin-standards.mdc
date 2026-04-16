@@ -1,0 +1,70 @@
+---
+description: Contribution rules for cursor-harness-plugin — enforces the Cursor plugin template spec on every change.
+alwaysApply: true
+---
+
+# Plugin Template Compliance
+
+This repo is a **single-plugin** Cursor plugin at the repo root. See `CLAUDE.md` / `AGENTS.md` for the full contribution guide. Canonical spec: https://github.com/cursor/plugin-template.
+
+## Structure — hard rules
+
+- Plugin name (`.cursor-plugin/plugin.json` → `name`) matches `^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$`.
+- MCP server definitions live **only** in `mcp.json` at repo root. Never rename this file.
+- Hook definitions live **only** in `hooks/hooks.json`. Hook scripts live in `scripts/`.
+- Every referenced path (logo, hook `command`, skill assets) is a **safe relative path** — no `..`, no absolute paths.
+- Logo is committed to `assets/` and referenced by relative path in `plugin.json`.
+- No `.cursor-plugin/marketplace.json` — this repo is single-plugin, not a marketplace.
+- No `plugins/` subdirectory — this repo is single-plugin.
+
+## Frontmatter — strict
+
+- `rules/*.mdc` — YAML frontmatter with `description`.
+- `skills/*/SKILL.md` — YAML frontmatter with `name` + `description`. `name` matches the directory.
+- Agents (`agents/*.md`), commands (`commands/*.(md|mdc|markdown|txt)`) — `name` + `description`.
+- Frontmatter opens with `---\n` and closes with `\n---\n`. Missing keys fail the validator.
+
+## Skills
+
+- Path: `skills/<kebab-case>/SKILL.md`.
+- Use only the Harness MCP v2 consolidated tools: `harness_list`, `harness_get`, `harness_create`, `harness_update`, `harness_delete`, `harness_execute`, `harness_search`, `harness_describe`, `harness_diagnose`, `harness_status`.
+- Required sections: `## Instructions`, `## Examples`, `## Performance Notes`, `## Troubleshooting`.
+- Every new skill gets a row in the README skill table.
+
+## Hooks
+
+- Event names come from https://cursor.com/docs/agent/hooks — do not invent. Commonly used here: `beforeMCPExecution`, `afterMCPExecution`.
+- Matchers for MCP tools use `MCP:<tool_name>` format (e.g. `MCP:harness_create|MCP:harness_update`).
+- Scripts read JSON from stdin, write JSON to stdout.
+- **Fail open** — on missing credentials, malformed stdin, network failure, or any exception, emit `{"permission":"allow"}` (for `before*`) or `{}` (for `after*`). Wrap `main()` in `try/catch`. Never block the agent because of our bug.
+- `.mjs` with `#!/usr/bin/env node` shebang and executable bit set. Zero npm dependencies — Node standard library only.
+- Scope narrowly by inspecting `tool_input.resource_type`; bail early on unrelated calls.
+
+## Environment & Secrets
+
+- Scripts inherit env from Cursor. Required: `HARNESS_API_KEY`, `HARNESS_ACCOUNT_ID`. Optional: `HARNESS_BASE_URL`, `HARNESS_ORG`, `HARNESS_PROJECT`.
+- Never commit `.env`, API keys, or account IDs. Never log credentials to stdout.
+- Network calls must time out (10s default via `scripts/harness-api.mjs`).
+
+## Sync when you change
+
+- New MCP tool → update `rules/harness.mdc` catalog AND the README tool table.
+- New skill → update the README skill table.
+- New hook → update the README Governance Hooks table AND `rules/harness.mdc`.
+- Any shipped change → bump `version` in `.cursor-plugin/plugin.json`.
+
+## Before you commit
+
+1. `node --check scripts/<file>.mjs` for every modified `.mjs`.
+2. Smoke-test hooks with synthetic stdin and unset credentials — confirm fail-open.
+3. Verify `plugin.json` parses, logo resolves, all rule/skill frontmatter is present, hook scripts exist and are executable.
+4. Update README if the user-facing surface changed.
+
+## Never
+
+- Rename `mcp.json`, `hooks/hooks.json`, or `.cursor-plugin/plugin.json`.
+- Reference paths outside the plugin root.
+- Weaken fail-open behavior in hooks.
+- Convert to a multi-plugin layout.
+- Add npm runtime dependencies to hook scripts.
+- Use undocumented Cursor hook event names.
