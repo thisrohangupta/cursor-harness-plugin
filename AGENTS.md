@@ -4,7 +4,7 @@ Instructions for any AI agent (Cursor, Claude Code, Codex, Aider, etc.) or human
 
 ## Repository Purpose
 
-This repo packages the Harness MCP v2 server + 27 Harness skills + governance hooks as a **single-plugin** Cursor plugin. Reference architecture: [makenotion/cursor-notion-plugin](https://github.com/makenotion/cursor-notion-plugin). Flat layout at the repo root, no marketplace manifest.
+This repo packages the Harness MCP v2 server + 29 Harness skills + governance hooks as a **single-plugin** Cursor plugin. Reference architecture: [makenotion/cursor-notion-plugin](https://github.com/makenotion/cursor-notion-plugin). Flat layout at the repo root, no marketplace manifest.
 
 ## Repository Layout
 

@@ -63,6 +63,8 @@ Tools accept `resource_type` (e.g. `pipeline`, `pipeline_v1`, `secret`, `templat
 | `/audit-report` | Audit trails and compliance evidence (SOC2, GDPR, HIPAA) |
 | `/template-usage` | Template dependency tracking, impact analysis, and adoption |
 | `/create-policy` | Create OPA governance policies for supply chain security |
+| `/manage-pull-requests` | Harness Code PRs — create/merge, reviewers, comments, checks, activity |
+| `/manage-freeze-windows` | Deployment freeze windows and project global freeze — create, toggle, delete |
 
 ### Workspace Rule
 
@@ -194,7 +196,7 @@ cursor-harness-plugin/
 │   └── validate-policies.mjs # afterMCPExecution — policy evaluation
 ├── rules/
 │   └── harness.mdc          # Workspace rule — MCP conventions
-├── skills/                  # 27 Harness skills
+├── skills/                  # 29 Harness skills
 │   ├── analyze-costs/
 │   ├── audit-report/
 │   ├── chaos-experiment/
@@ -215,6 +217,8 @@ cursor-harness-plugin/
 │   ├── gitops-status/
 │   ├── manage-delegates/
 │   ├── manage-feature-flags/
+│   ├── manage-freeze-windows/
+│   ├── manage-pull-requests/
 │   ├── manage-roles/
 │   ├── manage-users/
 │   ├── migrate-pipeline/

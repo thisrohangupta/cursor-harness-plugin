@@ -1,7 +1,7 @@
 {
   "name": "harness",
   "displayName": "Harness",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Harness Skills + Harness MCP v2 server packaged as a Cursor plugin. Build, debug, deploy, and govern via Harness from Cursor.",
   "author": {
     "name": "Harness",
