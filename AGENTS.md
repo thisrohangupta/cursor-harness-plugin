@@ -46,7 +46,8 @@ YAML frontmatter opens with `---\n` and closes with `\n---\n`. Missing keys fail
 ## Skill Authoring Standards
 
 - **Directory**: `skills/<kebab-case-name>/SKILL.md`. Frontmatter `name` must match the directory.
-- **MCP tools**: use only the Harness MCP v2 consolidated surface — `harness_list`, `harness_get`, `harness_create`, `harness_update`, `harness_delete`, `harness_execute`, `harness_search`, `harness_describe`, `harness_diagnose`, `harness_status`. Do not reference legacy per-resource tool names.
+- **MCP tools**: use only the Harness MCP v2 consolidated surface — `harness_list`, `harness_get`, `harness_create`, `harness_update`, `harness_delete`, `harness_execute`, `harness_search`, `harness_describe`, `harness_schema`, `harness_diagnose`, `harness_status`. Do not reference legacy per-resource tool names.
+- **Describe vs schema**: use `harness_describe(resource_type=…)` for metadata and operations; use `harness_schema(resource_type=…)` to get the exact JSON Schema for create/update bodies.
 - **Required sections**: `## Instructions`, `## Examples`, `## Performance Notes`, `## Troubleshooting`.
 - **References**: skill-specific reference files live in `skills/<name>/references/`. Cross-skill references use relative paths like `create-pipeline/references/native-steps.md`.
 - **Frontmatter metadata** (preferred — matches `harness/harness-skills`):
@@ -99,13 +100,11 @@ Changing one of these requires updating the others:
      | env -u HARNESS_API_KEY -u HARNESS_ACCOUNT_ID ./scripts/your-hook.mjs
    ```
    Confirm fail-open behavior without credentials.
-3. Structural validation:
-   - `.cursor-plugin/plugin.json` is valid JSON; `name` is kebab-case.
-   - `logo` path resolves.
-   - `mcp.json` is valid JSON.
-   - Every `rules/*.mdc` has `description` frontmatter.
-   - Every `skills/<name>/SKILL.md` has `name` + `description`.
-   - Every hook `command` path exists and is executable.
+3. Run the bundled validator (covers all the above):
+   ```bash
+   node scripts/validate-plugin.mjs
+   ```
+   Exits non-zero on any error. CI runs this automatically.
 4. README reflects any new skills, hooks, or env vars.
 
 ## What NOT to Do

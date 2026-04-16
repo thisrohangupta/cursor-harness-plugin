@@ -4,7 +4,14 @@
 // at account, org, and project scope via the Harness Policy Engine and attaches the
 // result as additional_context so the agent can surface pass/fail to the user.
 
-import { credentialsReady, harnessFetch, buildScopeQuery, accountId } from "./harness-api.mjs";
+import {
+  credentialsReady,
+  harnessFetch,
+  buildScopeQuery,
+  accountId,
+  extractPipelineYaml,
+  PIPELINE_RESOURCE_TYPES,
+} from "./harness-api.mjs";
 
 const NOOP = {};
 
@@ -13,13 +20,14 @@ async function main() {
   if (!input) { console.log(JSON.stringify(NOOP)); return; }
 
   const toolInput = input.tool_input || {};
-  if (toolInput.resource_type !== "pipeline") {
+  if (!PIPELINE_RESOURCE_TYPES.has(toolInput.resource_type)) {
     console.log(JSON.stringify(NOOP));
     return;
   }
 
-  const body = toolInput.body || {};
-  const yaml = typeof body.yamlPipeline === "string" ? body.yamlPipeline : "";
+  // body can be a YAML string, { yamlPipeline }, or { pipeline: {...} } — see
+  // mcp-server/src/tools/harness-create.ts input schema.
+  const yaml = extractPipelineYaml(toolInput.body);
   if (!yaml) { console.log(JSON.stringify(NOOP)); return; }
 
   if (!credentialsReady()) {
