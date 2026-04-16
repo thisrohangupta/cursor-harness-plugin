@@ -121,10 +121,12 @@ By default `mcp.json` runs `npx -y harness-mcp-v2 stdio`. To develop against a l
 
 ```json
 {
-  "harness": {
-    "command": "node",
-    "args": ["/absolute/path/to/mcp-server/build/index.js", "stdio"],
-    "env": { "HARNESS_API_KEY": "${HARNESS_API_KEY}", "HARNESS_ACCOUNT_ID": "${HARNESS_ACCOUNT_ID}" }
+  "mcpServers": {
+    "harness": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-server/build/index.js", "stdio"],
+      "env": { "HARNESS_API_KEY": "${HARNESS_API_KEY}", "HARNESS_ACCOUNT_ID": "${HARNESS_ACCOUNT_ID}" }
+    }
   }
 }
 ```
