@@ -10,7 +10,7 @@
   "homepage": "https://harness.io",
   "repository": "https://github.com/thisrohangupta/cursor-harness-plugin",
   "license": "Apache-2.0",
-  "logo": "assets/logo.png",
+  "logo": "assets/logo.svg",
   "mcpServers": "./mcp.json",
   "keywords": [
     "harness",

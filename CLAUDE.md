@@ -16,7 +16,7 @@ cursor-harness-plugin/
 ├── scripts/*.mjs                 # Hook script implementations
 ├── rules/harness.mdc             # Workspace rule shipped to installs
 ├── skills/<name>/SKILL.md        # Skill definitions (27 present)
-├── assets/logo.png               # Marketplace logo
+├── assets/logo.svg               # Marketplace logo
 ├── README.md                     # User-facing install + usage
 └── .cursor/rules/                # Repo-local rules (contribution-time only)
 ```

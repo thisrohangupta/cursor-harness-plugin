@@ -186,7 +186,7 @@ cursor-harness-plugin/
 ├── .cursor-plugin/
 │   └── plugin.json          # Plugin manifest
 ├── assets/
-│   └── logo.png             # Marketplace logo
+│   └── logo.svg             # Marketplace logo
 ├── mcp.json                 # Harness MCP v2 server config
 ├── hooks/
 │   └── hooks.json           # MCP governance hooks
